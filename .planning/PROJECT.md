@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A SaaS AI voice receptionist for clinics and dental offices in Kazakhstan. When a patient calls, the AI answers, handles the conversation in Kazakh, Russian, or mixed (code-switched) speech, and logs a summary to the clinic's dashboard. Clinic owners see analytics and call history; receptionists see actionable follow-ups like appointment requests.
+A SaaS AI receptionist for clinics and dental offices in Kazakhstan. Patients chat with the AI via Telegram (or WhatsApp), ask questions about services, and book appointments. Clinic owners log into a web dashboard to see all bookings and conversation history. Voice support comes after the text MVP is validated.
 
 ## Core Value
 
-The only AI receptionist that natively handles Kazakh-Russian code-switching — solving the exact problem no generic tool can solve for Kazakhstan clinics.
+Patients can book clinic appointments 24/7 via Telegram without calling — and owners see every booking in one place.
 
 ## Requirements
 
@@ -16,47 +16,61 @@ The only AI receptionist that natively handles Kazakh-Russian code-switching —
 
 ### Active
 
-- [ ] AI answers inbound calls and handles the full conversation (greet, answer questions, collect appointment requests)
-- [ ] Supports Kazakh, Russian, and Kazakh-Russian mixed speech (code-switching) from day one
-- [ ] Transcribes and summarizes each call, logs to clinic dashboard
-- [ ] Multi-tenant dashboard: each clinic has its own account
-- [ ] Dashboard shows call log, summaries, and appointment requests for receptionist follow-up
-- [ ] Dashboard shows call analytics overview for clinic owner (volume, missed, request types)
+**Bot (Patient-facing)**
+- [ ] Telegram bot answers patient questions about clinic services (hours, prices, treatments)
+- [ ] Bot collects appointment bookings: patient name, service, preferred date/time
+- [ ] Bot confirms booking to patient in chat
+- [ ] Supports Russian (primary); Kazakh optional in v1
+- [ ] Powered by OpenAI API for natural conversation
+
+**Dashboard (Owner-facing)**
+- [ ] Clinic owner can log into a web dashboard
+- [ ] Dashboard shows all bookings: patient name, service, time, status
+- [ ] Dashboard shows conversation history per patient
+- [ ] Owner can mark a booking as confirmed or cancelled
+- [ ] Multi-tenant: each clinic has its own account and isolated data
+
+**Infrastructure**
+- [ ] Each clinic connects their own Telegram bot (or we manage a shared bot with clinic routing)
 - [ ] Monthly subscription billing per clinic
-- [ ] Each clinic gets a dedicated phone number (Kazakhstan)
 
 ### Out of Scope
 
-- Direct calendar integration — appointment requests log to dashboard only, human confirms (v1) — too many clinic systems to integrate in v1
+- Voice calls — deferred to v2 after text MVP is validated
+- WhatsApp — deferred; start with Telegram (easier API, widely used in KZ)
+- Direct calendar sync — bookings log to dashboard only; receptionist confirms manually
 - Mobile app — web dashboard is sufficient for v1
-- Languages beyond Kazakh and Russian — not needed for Kazakhstan market
-- English support — not the target market
+- Kazakh language — Russian-first for speed; Kazakh-Russian code-switching is v2 moat
+- English — not the target market
 
 ## Context
 
 - Target market: Clinics and dental offices in Almaty, Kazakhstan
 - Builder: Solo developer using Claude Code
 - Immediate goal: Land first paying clinic customer with a working demo
-- STT approach: Use Whisper large-v3 or Google Cloud STT (Kazakh + Russian support) for v1 MVP. Fine-tune a custom Kazakh-Russian code-switching model in parallel as the core competitive moat.
-- Key technical risk: Kazakh is a low-resource language. Off-the-shelf STT accuracy will be imperfect — especially for code-switching. Research phase must evaluate: Whisper large-v3, wav2vec2-XLSR Kazakh fine-tunes, Meta MMS, and Google/Azure STT APIs.
-- Voice AI stack needs: STT (speech-to-text), LLM (conversation logic), TTS (text-to-speech response), telephony (inbound calls with a KZ number)
+- Language stack: Python (pyproject.toml with uv already initialized)
+- AI: OpenAI API key already available
+- Bot platform: Telegram first (simpler bot API than WhatsApp, popular in KZ)
+- Channel evolution: Telegram text → WhatsApp text → Voice agent (phased)
+- Key unknown: How to structure per-clinic Telegram bot (one shared bot vs. each clinic registers their own bot token)
 
 ## Constraints
 
-- **Market**: Kazakhstan only — must support local phone numbers and local payment methods
-- **Language**: Kazakh + Russian + code-switching is non-negotiable from launch — it's the whole value proposition
-- **Timeline**: Build toward a demoable product fast — goal is first customer, not a perfect product
-- **Stack**: Builder is a developer using Claude Code — full-stack web app + voice pipeline
-- **Budget**: Solo founder — prefer API-first (pay-per-use) over self-hosted infra for v1
+- **Market**: Kazakhstan — local phone numbers and payment methods matter for v2
+- **Language**: Russian-first for v1; Kazakh+code-switching is the v2 competitive moat
+- **Timeline**: Build toward a demoable product fast — first customer is the goal
+- **Stack**: Python + OpenAI API; Telegram Bot API for channel
+- **Budget**: Solo founder — API-first (pay-per-use), no self-hosted infra for v1
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| API-first STT for v1 (Whisper/Google) | Fastest path to demo; fine-tuned model is moat for v2 | — Pending |
-| Appointments log to dashboard only (no calendar sync) | Too many clinic systems; receptionist confirms manually in v1 | — Pending |
+| Text-first (no voice) | De-risk the product; validate core booking flow before adding voice complexity | — Pending |
+| Telegram over WhatsApp | Simpler bot API, no business account requirement, popular in KZ | — Pending |
+| OpenAI API for AI | Already have key; fastest path to working demo | — Pending |
+| Dashboard bookings only (no calendar sync) | Too many clinic systems; receptionist confirms manually in v1 | — Pending |
 | Monthly subscription model | Simple SaaS pricing; predictable revenue | — Pending |
-| Multi-tenant architecture | Each clinic = isolated account + dedicated number | — Pending |
 
 ## Evolution
 
@@ -76,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 after initialization*
+*Last updated: 2026-03-30 after scope pivot — text-first (Telegram) MVP clarified*
