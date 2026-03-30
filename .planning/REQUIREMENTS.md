@@ -108,7 +108,33 @@
 
 ## Traceability
 
-*(To be filled by roadmapper — maps each requirement to a phase and milestone)*
+| Requirement | Description (short) | Phase | Status |
+|-------------|----------------------|-------|--------|
+| BOT-01 | Russian greeting on /start | Phase 2 | Pending |
+| BOT-02 | Conversational booking flow (4 fields) | Phase 2 | Pending |
+| BOT-03 | request_contact button + text fallback | Phase 2 | Pending |
+| BOT-04 | Confirmation summary before logging | Phase 2 | Pending |
+| BOT-05 | Receipt message after confirmation | Phase 2 | Pending |
+| BOT-06 | Off-topic detection with phone fallback | Phase 2 | Pending |
+| BOT-07 | typing chat action while API call runs | Phase 2 | Pending |
+| BOT-08 | Phone normalization to +7XXXXXXXXXX | Phase 2 | Pending |
+| BOT-09 | Resolve Russian relative time expressions | Phase 2 | Pending |
+| BOT-10 | No medical advice; redirect to booking | Phase 2 | Pending |
+| BOT-11 | /start clears stale FSM state | Phase 2 | Pending |
+| BOT-12 | 5-minute booking deduplication | Phase 2 | Pending |
+| DASH-01 | Paginated booking table for owner | Phase 3 | Pending |
+| DASH-02 | Filter by status/service without reload | Phase 3 | Pending |
+| DASH-03 | Single-click status update in-place | Phase 3 | Pending |
+| DASH-04 | Conversation history view per booking | Phase 3 | Pending |
+| DASH-05 | Bot configuration status in dashboard | Phase 4 | Pending |
+| AUTH-01 | Owner registration with email verification | Phase 3 | Pending |
+| AUTH-02 | Login/logout with HTTP-only cookie | Phase 3 | Pending |
+| AUTH-03 | Data isolation — 403 on cross-clinic access | Phase 3 | Pending |
+| AUTH-04 | Bot token stored AES-256-GCM encrypted | Phase 4 | Pending |
+| AUTH-05 | Auto-register webhook on token save | Phase 4 | Pending |
+| INFRA-01 | Webhook secret token header validation | Phase 5 | Pending |
+| INFRA-02 | update_id idempotency via Redis | Phase 5 | Pending |
+| INFRA-03 | OpenAI error → Russian fallback message | Phase 2 | Pending |
 
 ---
 
