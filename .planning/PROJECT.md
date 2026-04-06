@@ -17,6 +17,7 @@ Patients can book clinic appointments 24/7 via Telegram without calling — and 
 ### Active
 
 **Bot (Patient-facing)**
+
 - [ ] Telegram bot answers patient questions about clinic services (hours, prices, treatments)
 - [ ] Bot collects appointment bookings: patient name, service, preferred date/time
 - [ ] Bot confirms booking to patient in chat
@@ -24,6 +25,7 @@ Patients can book clinic appointments 24/7 via Telegram without calling — and 
 - [ ] Powered by OpenAI API for natural conversation
 
 **Dashboard (Owner-facing)**
+
 - [ ] Clinic owner can log into a web dashboard
 - [ ] Dashboard shows all bookings: patient name, service, time, status
 - [ ] Dashboard shows conversation history per patient
@@ -31,6 +33,7 @@ Patients can book clinic appointments 24/7 via Telegram without calling — and 
 - [ ] Multi-tenant: each clinic has its own account and isolated data
 
 **Infrastructure**
+
 - [ ] Each clinic connects their own Telegram bot (or we manage a shared bot with clinic routing)
 - [ ] Monthly subscription billing per clinic
 
@@ -64,19 +67,20 @@ Patients can book clinic appointments 24/7 via Telegram without calling — and 
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Text-first (no voice) | De-risk the product; validate core booking flow before adding voice complexity | — Pending |
-| Telegram over WhatsApp | Simpler bot API, no business account requirement, popular in KZ | — Pending |
-| OpenAI API for AI | Already have key; fastest path to working demo | — Pending |
-| Dashboard bookings only (no calendar sync) | Too many clinic systems; receptionist confirms manually in v1 | — Pending |
-| Monthly subscription model | Simple SaaS pricing; predictable revenue | — Pending |
+| Decision                                   | Rationale                                                                      | Outcome    |
+| ------------------------------------------ | ------------------------------------------------------------------------------ | ---------- |
+| Text-first (no voice)                      | De-risk the product; validate core booking flow before adding voice complexity | — Pending |
+| Telegram over WhatsApp                     | Simpler bot API, no business account requirement, popular in KZ                | — Pending |
+| OpenAI API for AI                          | Already have key; fastest path to working demo                                 | — Pending |
+| Dashboard bookings only (no calendar sync) | Too many clinic systems; receptionist confirms manually in v1                  | — Pending |
+| Monthly subscription model                 | Simple SaaS pricing; predictable revenue                                       | — Pending |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd:transition`):
+
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
@@ -84,10 +88,12 @@ This document evolves at phase transitions and milestone boundaries.
 5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `/gsd:complete-milestone`):
+
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
 ---
+
 *Last updated: 2026-03-30 after scope pivot — text-first (Telegram) MVP clarified*

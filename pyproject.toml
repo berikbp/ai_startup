@@ -1,7 +1,16 @@
 [project]
 name = "ai-startup"
 version = "0.1.0"
-description = "Add your description here"
+description = "Phase 1 foundation for an AI clinic receptionist SaaS"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "aiogram>=3.26.0,<4",
+    "alembic>=1.18.0,<2",
+    "asyncpg>=0.31.0,<1",
+    "fastapi>=0.135.0,<1",
+    "pydantic-settings>=2.11.0,<3",
+    "sqlalchemy>=2.0.48,<3",
+    "sqlmodel>=0.0.37,<0.0.38",
+    "uvicorn[standard]>=0.42.0,<1",
+]
