@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, UniqueConstraint
+from sqlalchemy import DateTime, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -93,8 +93,16 @@ class Booking(TimestampMixin, table=True):
         sa_type=DateTime(timezone=True),
     )
     preferred_datetime_text: str | None = None
-    status: BookingStatus = Field(default=BookingStatus.pending, nullable=False)
-    source: BookingSource = Field(default=BookingSource.telegram, nullable=False)
+    status: BookingStatus = Field(
+        default=BookingStatus.pending,
+        nullable=False,
+        sa_type=String(),
+    )
+    source: BookingSource = Field(
+        default=BookingSource.telegram,
+        nullable=False,
+        sa_type=String(),
+    )
 
 
 class Message(SQLModel, table=True):
@@ -108,7 +116,7 @@ class Message(SQLModel, table=True):
         foreign_key="booking.id",
         index=True,
     )
-    role: MessageRole = Field(nullable=False)
+    role: MessageRole = Field(nullable=False, sa_type=String())
     content: str
     telegram_message_id: int | None = None
     created_at: datetime = Field(
