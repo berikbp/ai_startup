@@ -31,9 +31,6 @@ from app.services.openai_service import (
 )
 from app.services.patient_service import upsert_patient
 
-
-router = Router()
-
 YES_CHOICES = {
     "да",
     "да, всё верно",
@@ -120,15 +117,22 @@ async def _reply_and_log(
     reply_markup: Any | None = None,
     booking_id: Any | None = None,
 ) -> None:
-    sent = await message.answer(text, reply_markup=reply_markup)
-    await log_assistant_message(
+    assistant_message = await log_assistant_message(
         session,
         clinic=clinic,
         patient=patient,
         content=text,
-        telegram_message_id=sent.message_id,
         booking_id=booking_id,
     )
+    await session.commit()
+
+    sent = await message.answer(text, reply_markup=reply_markup)
+    assistant_message.telegram_message_id = sent.message_id
+
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
 
 
 async def _extract_with_typing(
@@ -225,7 +229,6 @@ async def _restart_flow(
     )
 
 
-@router.message(CommandStart())
 async def handle_start(
     message: Message,
     state: FSMContext,
@@ -255,7 +258,6 @@ async def handle_start(
         await session.commit()
 
 
-@router.message(StateFilter(None), F.text)
 async def handle_message_without_state(
     message: Message,
     state: FSMContext,
@@ -285,7 +287,6 @@ async def handle_message_without_state(
         await session.commit()
 
 
-@router.message(BookingStates.WAITING_SERVICE, F.text)
 async def handle_service_message(
     message: Message,
     state: FSMContext,
@@ -365,7 +366,6 @@ async def handle_service_message(
         await session.commit()
 
 
-@router.message(BookingStates.WAITING_DATETIME, F.text)
 async def handle_datetime_message(
     message: Message,
     state: FSMContext,
@@ -486,7 +486,6 @@ async def handle_datetime_message(
         await session.commit()
 
 
-@router.message(BookingStates.WAITING_NAME, F.text)
 async def handle_name_message(
     message: Message,
     state: FSMContext,
@@ -575,7 +574,6 @@ async def handle_name_message(
         await session.commit()
 
 
-@router.message(BookingStates.WAITING_PHONE, F.contact)
 async def handle_phone_contact(
     message: Message,
     state: FSMContext,
@@ -663,7 +661,6 @@ async def handle_phone_contact(
         await session.commit()
 
 
-@router.message(BookingStates.WAITING_PHONE, F.text)
 async def handle_phone_message(
     message: Message,
     state: FSMContext,
@@ -763,7 +760,6 @@ async def handle_phone_message(
         await session.commit()
 
 
-@router.message(BookingStates.CONFIRMING, F.text)
 async def handle_confirmation_message(
     message: Message,
     state: FSMContext,
@@ -862,13 +858,6 @@ async def handle_confirmation_message(
         await session.commit()
 
 
-@router.message(
-    BookingStates.WAITING_SERVICE,
-    BookingStates.WAITING_DATETIME,
-    BookingStates.WAITING_NAME,
-    BookingStates.WAITING_PHONE,
-    BookingStates.CONFIRMING,
-)
 async def handle_non_text_message(
     message: Message,
     state: FSMContext,
@@ -907,3 +896,24 @@ async def handle_non_text_message(
             reply_markup=reply_markup,
         )
         await session.commit()
+
+
+def build_router() -> Router:
+    router = Router()
+    router.message.register(handle_start, CommandStart())
+    router.message.register(handle_message_without_state, StateFilter(None), F.text)
+    router.message.register(handle_service_message, BookingStates.WAITING_SERVICE, F.text)
+    router.message.register(handle_datetime_message, BookingStates.WAITING_DATETIME, F.text)
+    router.message.register(handle_name_message, BookingStates.WAITING_NAME, F.text)
+    router.message.register(handle_phone_contact, BookingStates.WAITING_PHONE, F.contact)
+    router.message.register(handle_phone_message, BookingStates.WAITING_PHONE, F.text)
+    router.message.register(handle_confirmation_message, BookingStates.CONFIRMING, F.text)
+    router.message.register(
+        handle_non_text_message,
+        BookingStates.WAITING_SERVICE,
+        BookingStates.WAITING_DATETIME,
+        BookingStates.WAITING_NAME,
+        BookingStates.WAITING_PHONE,
+        BookingStates.CONFIRMING,
+    )
+    return router

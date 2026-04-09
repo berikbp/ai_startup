@@ -16,3 +16,11 @@ dependencies = [
     "sqlmodel>=0.0.37,<0.0.38",
     "uvicorn[standard]>=0.42.0,<1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0,<9",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 _WHITESPACE_RE = re.compile(r"\s+")
 _TIME_RE = re.compile(r"\b\d{1,2}[:.]\d{2}\b")
 _DATE_RE = re.compile(r"\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b")
+_NAME_SEPARATORS = {"-", "'", "’"}
 _RELATIVE_DATE_WORDS = {
     "сегодня",
     "завтра",
@@ -45,10 +46,31 @@ def clean_full_name(value: str | None) -> str | None:
     if any(char.isdigit() for char in cleaned):
         return None
 
-    if len(cleaned) < 2:
+    parts = cleaned.split(" ")
+    if len(parts) < 2:
+        return None
+
+    if any(not _is_valid_name_part(part) for part in parts):
         return None
 
     return cleaned
+
+
+def _is_valid_name_part(value: str) -> bool:
+    if not value:
+        return False
+
+    if value[0] in _NAME_SEPARATORS or value[-1] in _NAME_SEPARATORS:
+        return False
+
+    if any(
+        left in _NAME_SEPARATORS and right in _NAME_SEPARATORS
+        for left, right in zip(value, value[1:])
+    ):
+        return False
+
+    letters_only = "".join(char for char in value if char not in _NAME_SEPARATORS)
+    return len(letters_only) >= 2 and letters_only.isalpha()
 
 
 def normalize_phone_number(value: str | None) -> str | None:

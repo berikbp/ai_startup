@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://ai_startup:ai_startup@localhost:5434/ai_startup"
     )
+    database_disable_pooling: bool = False
     telegram_bot_token: str = ""
     telegram_webhook_base_url: str = ""
     telegram_webhook_secret: str = "local-dev-secret"
@@ -34,6 +35,9 @@ class Settings(BaseSettings):
     )
     typing_interval_seconds: float = 4.0
     booking_duplicate_window_seconds: int = 300
+    auth_secret_key: str = "change-me-local-auth-secret"
+    auth_cookie_name: str = "owner_session"
+    auth_session_max_age_seconds: int = 604800
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -80,6 +84,7 @@ def _load_loose_env_file() -> dict[str, str]:
         "APP_HOST": "app_host",
         "APP_PORT": "app_port",
         "DATABASE_URL": "database_url",
+        "DATABASE_DISABLE_POOLING": "database_disable_pooling",
         "TELEGRAM_BOT_TOKEN": "telegram_bot_token",
         "TELEGRAM_WEBHOOK_BASE_URL": "telegram_webhook_base_url",
         "TELEGRAM_WEBHOOK_SECRET": "telegram_webhook_secret",
@@ -94,6 +99,9 @@ def _load_loose_env_file() -> dict[str, str]:
         "OPENAI_TIMEOUT_SECONDS": "openai_timeout_seconds",
         "TYPING_INTERVAL_SECONDS": "typing_interval_seconds",
         "BOOKING_DUPLICATE_WINDOW_SECONDS": "booking_duplicate_window_seconds",
+        "AUTH_SECRET_KEY": "auth_secret_key",
+        "AUTH_COOKIE_NAME": "auth_cookie_name",
+        "AUTH_SESSION_MAX_AGE_SECONDS": "auth_session_max_age_seconds",
     }
 
     overrides: dict[str, str] = {}

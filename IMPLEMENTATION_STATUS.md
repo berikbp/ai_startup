@@ -2,23 +2,30 @@
 
 ## Completed
 
-Phase 2 Telegram booking flow has been implemented on top of the Phase 1 foundation.
+Phase 3 owner workflow has been implemented on top of the Phase 2 booking flow.
 
-- Added aiogram-based bot infrastructure with:
-  - dispatcher wiring
-  - FSM states
-  - Russian booking prompts and keyboards
-  - local polling entrypoint
-- Added FastAPI webhook handling at `POST /webhook/{clinic_slug}` with basic secret validation.
-- Added domain services for:
-  - clinic lookup and test-clinic seeding
-  - patient upsert
-  - booking creation and duplicate detection
-  - message logging
-  - phone and datetime normalization
-  - OpenAI-backed step extraction
-- Added a repeatable seed command for the Phase 2 test clinic.
-- Added focused automated tests for normalization and duplicate booking protection.
+- Phase 2 booking flow is in place with:
+  - aiogram-based bot infrastructure
+  - webhook and local polling support
+  - Russian-language FSM booking flow
+  - patient, booking, and message persistence
+  - duplicate booking protection
+  - OpenAI-backed extraction for active booking steps
+- Added owner-facing Phase 3 functionality:
+  - first-owner registration for the configured clinic
+  - owner login/logout with signed HTTP-only cookie auth
+  - protected dashboard at `/owner/dashboard`
+  - booking list filters and status summary cards
+  - booking detail page with patient and conversation context
+  - booking status updates from the owner area
+- Added focused automated tests for:
+  - normalization
+  - duplicate booking protection
+  - reply/log persistence
+  - owner registration/login
+  - protected dashboard access
+  - clinic-scoped booking visibility
+  - booking detail and status updates
 
 ## Previously Completed
 
@@ -55,10 +62,10 @@ All tenant-scoped tables include `clinic_id`.
 
 The following checks were completed successfully:
 
-- `uv sync`
 - `uv run alembic upgrade head`
-- database schema creation in local PostgreSQL
-- `/health` endpoint response: `{"status":"ok"}`
+- `uv run pytest -q`
+- database-backed owner dashboard tests against local PostgreSQL
+- `/health` endpoint remains available
 
 ## Notes
 
@@ -69,16 +76,16 @@ The following checks were completed successfully:
 
 The following items are still pending for later phases:
 
-- dashboard UI
-- authentication
-- bot token management
-- Redis-backed bot state
-- production hardening
+- multi-clinic owner onboarding
+- bot token management in the database
+- Redis-backed bot state or webhook idempotency
+- production security and deployment hardening
+- availability checking or calendar sync
 
 ## Next Recommended Step
 
-Start Phase 3:
+Start Phase 4:
 
-- add owner registration and login
-- build the booking list/dashboard surface
-- expose conversation history and booking status updates
+- move from single-clinic owner flow to multi-clinic onboarding
+- persist and manage bot configuration per clinic
+- introduce production-ready session/security and operational hardening

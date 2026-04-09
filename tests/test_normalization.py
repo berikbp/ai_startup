@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from app.services.normalization import (
     build_datetime_clarification_question,
+    clean_full_name,
     normalize_phone_number,
     validate_preferred_datetime,
 )
@@ -18,6 +19,16 @@ class NormalizationTests(TestCase):
 
     def test_invalid_phone_number_returns_none(self) -> None:
         self.assertIsNone(normalize_phone_number("12345"))
+
+    def test_clean_full_name_accepts_multi_part_names(self) -> None:
+        self.assertEqual(clean_full_name("  Анна   Иванова  "), "Анна Иванова")
+        self.assertEqual(clean_full_name("Jean-Pierre O'Connor"), "Jean-Pierre O'Connor")
+
+    def test_clean_full_name_rejects_incomplete_or_invalid_names(self) -> None:
+        self.assertIsNone(clean_full_name("Иван"))
+        self.assertIsNone(clean_full_name("Ок"))
+        self.assertIsNone(clean_full_name("Анна 123"))
+        self.assertIsNone(clean_full_name("!!! !!!"))
 
     def test_validate_preferred_datetime_accepts_future_values(self) -> None:
         future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
