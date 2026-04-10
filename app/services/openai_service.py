@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -9,7 +10,11 @@ from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI, R
 from pydantic import BaseModel
 
 from app.config import Settings
+from app.logging_utils import structured_event
 from app.models import Clinic
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExtractionResult(BaseModel):
@@ -53,6 +58,15 @@ class OpenAIExtractionService:
         missing_fields: list[str],
     ) -> ExtractionResult:
         if self._client is None:
+            logger.warning(
+                structured_event(
+                    "openai_extraction_unavailable",
+                    clinic_id=clinic.id,
+                    clinic_slug=clinic.slug,
+                    step=step,
+                    reason="not_configured",
+                )
+            )
             raise OpenAIServiceError("OpenAI is not configured.")
 
         timezone_name = clinic.timezone or self._settings.clinic_timezone_default
@@ -82,15 +96,42 @@ class OpenAIExtractionService:
                 },
             )
         except (APIConnectionError, APIError, APITimeoutError, RateLimitError) as exc:
+            logger.exception(
+                structured_event(
+                    "openai_extraction_failed",
+                    clinic_id=clinic.id,
+                    clinic_slug=clinic.slug,
+                    step=step,
+                    reason="request_failed",
+                )
+            )
             raise OpenAIServiceError("OpenAI request failed.") from exc
 
         output_text = getattr(response, "output_text", None)
         if not output_text:
+            logger.warning(
+                structured_event(
+                    "openai_extraction_failed",
+                    clinic_id=clinic.id,
+                    clinic_slug=clinic.slug,
+                    step=step,
+                    reason="empty_response",
+                )
+            )
             raise OpenAIServiceError("OpenAI returned an empty response.")
 
         try:
             payload = json.loads(output_text)
         except json.JSONDecodeError as exc:
+            logger.warning(
+                structured_event(
+                    "openai_extraction_failed",
+                    clinic_id=clinic.id,
+                    clinic_slug=clinic.slug,
+                    step=step,
+                    reason="invalid_json",
+                )
+            )
             raise OpenAIServiceError("OpenAI returned invalid JSON.") from exc
 
         return ExtractionResult.model_validate(payload)

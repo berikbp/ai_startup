@@ -30,6 +30,11 @@ class SessionData:
     expires_at: int
 
 
+@dataclass(slots=True)
+class CsrfTokenData:
+    expires_at: int
+
+
 def normalize_owner_email(value: str | None) -> str | None:
     normalized = normalize_whitespace(value).lower()
     if not normalized or " " in normalized or normalized.count("@") != 1:
@@ -137,6 +142,45 @@ def verify_session_token(token: str | None, secret_key: str) -> SessionData | No
         return None
 
     return SessionData(clinic_user_id=clinic_user_id, expires_at=expires_at)
+
+
+def create_csrf_token(*, secret_key: str, max_age_seconds: int) -> str:
+    payload = {
+        "exp": int(time.time()) + max_age_seconds,
+        "nonce": secrets.token_urlsafe(16),
+    }
+    raw_payload = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    payload_part = _urlsafe_b64encode(raw_payload)
+    signature = _sign_value(payload_part.encode("utf-8"), secret_key)
+    return f"{payload_part}.{_urlsafe_b64encode(signature)}"
+
+
+def verify_csrf_token(token: str | None, secret_key: str) -> CsrfTokenData | None:
+    if not token or "." not in token:
+        return None
+
+    payload_part, signature_part = token.split(".", 1)
+
+    try:
+        signature = _urlsafe_b64decode(signature_part)
+    except (ValueError, TypeError):
+        return None
+
+    expected_signature = _sign_value(payload_part.encode("utf-8"), secret_key)
+    if not hmac.compare_digest(signature, expected_signature):
+        return None
+
+    try:
+        payload = json.loads(_urlsafe_b64decode(payload_part).decode("utf-8"))
+        expires_at = int(payload["exp"])
+        nonce = str(payload["nonce"])
+    except (KeyError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+
+    if not nonce or expires_at <= int(time.time()):
+        return None
+
+    return CsrfTokenData(expires_at=expires_at)
 
 
 async def clinic_has_owner(session: AsyncSession, clinic_id: uuid.UUID) -> bool:

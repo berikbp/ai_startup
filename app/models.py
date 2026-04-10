@@ -62,6 +62,29 @@ class ClinicUser(TimestampMixin, table=True):
     is_verified: bool = Field(default=False, nullable=False)
 
 
+class ClinicTelegramConfig(TimestampMixin, table=True):
+    __tablename__ = "clinic_telegram_config"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "clinic_id",
+            name="uq_clinic_telegram_config_clinic_id",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    clinic_id: uuid.UUID = Field(foreign_key="clinic.id", index=True, nullable=False)
+    bot_token_encrypted: str
+    bot_username: str | None = None
+    webhook_secret: str = Field(index=True, unique=True)
+    is_active: bool = Field(default=False, nullable=False)
+    last_webhook_registered_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+    )
+    last_error: str | None = None
+
+
 class Patient(TimestampMixin, table=True):
     __tablename__ = "patient"
 

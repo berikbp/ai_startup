@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
@@ -9,6 +10,7 @@ from zoneinfo import ZoneInfo
 _WHITESPACE_RE = re.compile(r"\s+")
 _TIME_RE = re.compile(r"\b\d{1,2}[:.]\d{2}\b")
 _DATE_RE = re.compile(r"\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b")
+_CLINIC_SLUG_RE = re.compile(r"[^a-z0-9]+")
 _NAME_SEPARATORS = {"-", "'", "’"}
 _RELATIVE_DATE_WORDS = {
     "сегодня",
@@ -87,6 +89,23 @@ def normalize_phone_number(value: str | None) -> str | None:
         return None
 
     return f"+{digits}"
+
+
+def normalize_clinic_slug(value: str | None) -> str:
+    cleaned = normalize_whitespace(value).lower()
+    if not cleaned:
+        return ""
+
+    ascii_only = cleaned.encode("ascii", "ignore").decode("ascii")
+    slug = _CLINIC_SLUG_RE.sub("-", ascii_only).strip("-")
+    return re.sub(r"-{2,}", "-", slug)
+
+
+def generate_clinic_slug(value: str | None) -> str:
+    slug = normalize_clinic_slug(value)
+    if slug:
+        return slug
+    return f"clinic-{secrets.token_hex(4)}"
 
 
 def validate_preferred_datetime(

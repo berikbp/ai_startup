@@ -1,55 +1,49 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from aiogram import Bot
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router as api_router
 from app.bot.dispatcher import build_dispatcher
 from app.config import get_settings
-from app.db import SessionLocal
+from app.logging_utils import configure_logging
 from app.owner.router import router as owner_router
-from app.services.clinic_service import ensure_test_clinic
+from app.services.bot_registry import BotRegistry
+from app.services.crypto_service import CryptoService
+from app.services.idempotency_service import TelegramUpdateIdempotencyService
 from app.services.openai_service import OpenAIExtractionService
+from app.services.redis_service import RedisService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    dispatcher = build_dispatcher()
+    configure_logging(settings.log_level)
+    redis_service = RedisService(settings)
+    dispatcher = build_dispatcher(
+        storage=redis_service.create_fsm_storage(),
+        events_isolation=redis_service.create_event_isolation(),
+    )
     openai_service = OpenAIExtractionService(settings)
+    bot_registry = BotRegistry()
+    crypto_service = CryptoService(settings)
+    idempotency_service = TelegramUpdateIdempotencyService(settings, redis_service.client)
 
     app.state.settings = settings
+    app.state.redis_service = redis_service
     app.state.dispatcher = dispatcher
     app.state.openai_service = openai_service
-    app.state.telegram_bot = None
-
-    async with SessionLocal() as session:
-        await ensure_test_clinic(session, settings)
-
-    if settings.telegram_enabled:
-        bot = Bot(
-            token=settings.telegram_bot_token,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-        )
-        app.state.telegram_bot = bot
-
-        if settings.telegram_webhook_url is not None:
-            await bot.set_webhook(
-                url=settings.telegram_webhook_url,
-                secret_token=settings.telegram_webhook_secret,
-                allowed_updates=dispatcher.resolve_used_update_types(),
-            )
+    app.state.bot_registry = bot_registry
+    app.state.crypto_service = crypto_service
+    app.state.idempotency_service = idempotency_service
 
     try:
         yield
     finally:
-        if app.state.telegram_bot is not None:
-            await app.state.telegram_bot.session.close()
+        await bot_registry.close()
         await openai_service.close()
+        await redis_service.close()
 
 
 def create_app() -> FastAPI:

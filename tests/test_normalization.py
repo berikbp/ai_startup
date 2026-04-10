@@ -6,6 +6,8 @@ from unittest import TestCase
 from app.services.normalization import (
     build_datetime_clarification_question,
     clean_full_name,
+    generate_clinic_slug,
+    normalize_clinic_slug,
     normalize_phone_number,
     validate_preferred_datetime,
 )
@@ -19,6 +21,10 @@ class NormalizationTests(TestCase):
 
     def test_invalid_phone_number_returns_none(self) -> None:
         self.assertIsNone(normalize_phone_number("12345"))
+
+    def test_clinic_slug_normalization_and_generation(self) -> None:
+        self.assertEqual(normalize_clinic_slug(" Dental Clinic 24 "), "dental-clinic-24")
+        self.assertTrue(generate_clinic_slug("Стоматология").startswith("clinic-"))
 
     def test_clean_full_name_accepts_multi_part_names(self) -> None:
         self.assertEqual(clean_full_name("  Анна   Иванова  "), "Анна Иванова")
