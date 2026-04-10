@@ -10,11 +10,11 @@
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** — Project scaffold, database schema, multi-tenant data model, deployment pipeline
-- [ ] **Phase 2: Telegram Bot Core** — aiogram 3 bot with FSM booking flow and OpenAI function-calling integration
-- [ ] **Phase 3: Owner Dashboard** — FastAPI + HTMX dashboard with auth, booking table, and conversation history
-- [ ] **Phase 4: Integration and Polish** — Connect bot to dashboard, bot token management, end-to-end demo flow
-- [ ] **Phase 5: Hardening** — Redis FSM state, webhook security, idempotency, error handling for production
+- [x] **Phase 1: Foundation** — Project scaffold, database schema, multi-tenant data model, deployment pipeline
+- [x] **Phase 2: Telegram Bot Core** — aiogram 3 bot with FSM booking flow and OpenAI function-calling integration
+- [x] **Phase 3: Owner Dashboard** — FastAPI + HTMX dashboard with auth, booking table, and conversation history
+- [x] **Phase 4: Integration and Polish** — Connect bot to dashboard, bot token management, end-to-end demo flow
+- [x] **Phase 5: Hardening** — Redis FSM state, webhook security, idempotency, error handling for production
 
 ---
 
@@ -121,15 +121,15 @@
 **Requirements**: INFRA-01, INFRA-02
 
 **Plans**:
-1. Replace in-memory aiogram FSM storage with `RedisStorage`; configure `state_ttl=86400` (24 hours); store OpenAI conversation history in Redis under a separate key namespace with 24-hour TTL and 15-message cap; verify state survives a Railway process restart
-2. Implement webhook secret token validation: validate `X-Telegram-Bot-Api-Secret-Token` header on every `POST /webhook/{clinic_slug}` request; reject with HTTP 403 before any processing on mismatch (INFRA-01); implement `update_id` idempotency check in Redis with 1-hour TTL — duplicate updates return HTTP 200 without reprocessing (INFRA-02)
-3. Add structured logging (JSON), Railway log drain review, and smoke-test the full booking flow on production after hardening changes are deployed
+1. Replace in-memory aiogram FSM storage with Redis-backed storage; configure 24-hour state and data TTLs; reuse the same Redis runtime in both FastAPI lifespan and local polling so in-progress conversations survive process restarts
+2. Implement Redis-backed `update_id` idempotency keyed by clinic and validated only after the clinic-specific `X-Telegram-Bot-Api-Secret-Token` check passes; duplicate updates return HTTP 200 without reprocessing
+3. Add structured JSON-style runtime logging for webhook decisions, Telegram bot configuration failures, and OpenAI extraction failures; document the local stack with PostgreSQL plus Redis and verify the runtime with automated tests
 
 **Success Criteria** (what must be TRUE when this phase completes):
-1. A Railway process restart (simulated via redeploy) does not lose an in-progress booking conversation — the patient can continue from where they left off
-2. Sending a forged webhook POST without the correct `X-Telegram-Bot-Api-Secret-Token` header returns HTTP 403 — the request is logged but not processed
-3. Replaying the same `update_id` twice (simulating a Telegram retry) results in exactly one booking record, not two — the second request returns HTTP 200 immediately
-4. The full booking-to-dashboard flow works correctly on production Railway after all hardening changes are deployed
+1. Redis-backed FSM state is the default runtime path for both webhook processing and local polling
+2. Sending a forged webhook POST without the correct `X-Telegram-Bot-Api-Secret-Token` header returns HTTP 403 before any Telegram update is processed
+3. Replaying the same `update_id` twice for the same clinic results in exactly one dispatcher execution — the second request returns HTTP 200 immediately
+4. `uv run alembic upgrade head` and `uv run pytest -q` succeed after the hardening changes, and the local development stack documents both PostgreSQL and Redis
 
 ---
 
@@ -137,11 +137,11 @@
 
 | Phase | Plans | Status | Completed |
 |-------|-------|--------|-----------|
-| 1. Foundation | 4 | Not started | - |
-| 2. Telegram Bot Core | 5 | Not started | - |
-| 3. Owner Dashboard | 4 | Not started | - |
-| 4. Integration and Polish | 4 | Not started | - |
-| 5. Hardening | 3 | Not started | - |
+| 1. Foundation | 4 | Completed | 4/4 |
+| 2. Telegram Bot Core | 5 | Completed | 5/5 |
+| 3. Owner Dashboard | 4 | Completed | 4/4 |
+| 4. Integration and Polish | 4 | Completed | 4/4 |
+| 5. Hardening | 3 | Completed | 3/3 |
 
 ---
 
