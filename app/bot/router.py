@@ -1,21 +1,32 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from aiogram import F, Router
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.utils.chat_action import ChatActionSender
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot import copy
-from app.bot.keyboards import confirmation_keyboard, phone_request_keyboard, remove_keyboard
-from app.bot.states import BookingStates
+from app.bot.keyboards import (
+    cancel_confirmation_keyboard,
+    confirmation_keyboard,
+    phone_request_keyboard,
+    remove_keyboard,
+)
+from app.bot.states import BookingStates, CancelStates
 from app.config import Settings
 from app.db import SessionLocal
-from app.models import Clinic, Patient
-from app.services.booking_service import create_booking
+from app.models import BookingStatus, Clinic, Patient
+from app.services.booking_service import (
+    cancel_booking,
+    create_booking,
+    get_booking_by_id,
+    get_latest_pending_booking,
+)
 from app.services.message_service import log_assistant_message, log_user_message
 from app.services.normalization import (
     build_datetime_clarification_question,
@@ -898,9 +909,137 @@ async def handle_non_text_message(
         await session.commit()
 
 
+async def handle_cancel(
+    message: Message,
+    state: FSMContext,
+    clinic: Clinic,
+) -> None:
+    state_data = await state.get_data()
+    async with SessionLocal() as session:
+        patient = await _load_patient(
+            session,
+            clinic=clinic,
+            message=message,
+            state_data=state_data,
+        )
+        await log_user_message(
+            session,
+            clinic=clinic,
+            patient=patient,
+            content=_message_content(message),
+            telegram_message_id=message.message_id,
+        )
+
+        booking = await get_latest_pending_booking(session, clinic=clinic, patient=patient)
+        if booking is None:
+            await state.clear()
+            await _reply_and_log(
+                session,
+                message=message,
+                clinic=clinic,
+                patient=patient,
+                text=copy.cancel_no_pending_booking(),
+                reply_markup=remove_keyboard(),
+            )
+            await session.commit()
+            return
+
+        await state.clear()
+        await state.set_state(CancelStates.CONFIRMING_CANCEL)
+        await state.update_data(cancel_booking_id=str(booking.id))
+        await _reply_and_log(
+            session,
+            message=message,
+            clinic=clinic,
+            patient=patient,
+            text=copy.cancel_confirmation(
+                clinic=clinic,
+                service_type=booking.service_type,
+                preferred_datetime_iso=(
+                    booking.preferred_datetime_at.isoformat()
+                    if booking.preferred_datetime_at
+                    else None
+                ),
+                preferred_datetime_text=booking.preferred_datetime_text,
+            ),
+            reply_markup=cancel_confirmation_keyboard(),
+        )
+        await session.commit()
+
+
+async def handle_cancel_confirmation(
+    message: Message,
+    state: FSMContext,
+    clinic: Clinic,
+) -> None:
+    state_data = await state.get_data()
+    async with SessionLocal() as session:
+        patient = await _load_patient(
+            session,
+            clinic=clinic,
+            message=message,
+            state_data=state_data,
+        )
+        await log_user_message(
+            session,
+            clinic=clinic,
+            patient=patient,
+            content=_message_content(message),
+            telegram_message_id=message.message_id,
+        )
+
+        decision = normalize_whitespace(message.text or "").lower()
+
+        if decision == "да, отменить":
+            booking_id_str = state_data.get("cancel_booking_id")
+            if booking_id_str:
+                booking = await get_booking_by_id(
+                    session,
+                    clinic=clinic,
+                    booking_id=uuid.UUID(booking_id_str),
+                )
+                if booking and booking.status == BookingStatus.pending:
+                    await cancel_booking(session, booking=booking)
+            await state.clear()
+            await _reply_and_log(
+                session,
+                message=message,
+                clinic=clinic,
+                patient=patient,
+                text=copy.cancel_success(),
+                reply_markup=remove_keyboard(),
+            )
+            await session.commit()
+            return
+
+        if decision == "нет, оставить":
+            await state.clear()
+            await _reply_and_log(
+                session,
+                message=message,
+                clinic=clinic,
+                patient=patient,
+                text=copy.cancel_aborted(),
+                reply_markup=remove_keyboard(),
+            )
+            await session.commit()
+            return
+
+        await _reply_and_log(
+            session,
+            message=message,
+            clinic=clinic,
+            patient=patient,
+            text=copy.confirmation_retry(),
+            reply_markup=cancel_confirmation_keyboard(),
+        )
+        await session.commit()
+
+
 def build_router() -> Router:
     router = Router()
     router.message.register(handle_start, CommandStart())
+    router.message.register(handle_cancel, Command("cancel"), StateFilter("*"))
     router.message.register(handle_message_without_state, StateFilter(None), F.text)
     router.message.register(handle_service_message, BookingStates.WAITING_SERVICE, F.text)
     router.message.register(handle_datetime_message, BookingStates.WAITING_DATETIME, F.text)
@@ -908,6 +1047,7 @@ def build_router() -> Router:
     router.message.register(handle_phone_contact, BookingStates.WAITING_PHONE, F.contact)
     router.message.register(handle_phone_message, BookingStates.WAITING_PHONE, F.text)
     router.message.register(handle_confirmation_message, BookingStates.CONFIRMING, F.text)
+    router.message.register(handle_cancel_confirmation, CancelStates.CONFIRMING_CANCEL, F.text)
     router.message.register(
         handle_non_text_message,
         BookingStates.WAITING_SERVICE,

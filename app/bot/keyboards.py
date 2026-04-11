@@ -15,6 +15,17 @@ def phone_request_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
+def cancel_confirmation_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Да, отменить")],
+            [KeyboardButton(text="Нет, оставить")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
 def confirmation_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[

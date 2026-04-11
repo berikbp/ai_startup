@@ -7,3 +7,7 @@ class BookingStates(StatesGroup):
     WAITING_NAME = State()
     WAITING_PHONE = State()
     CONFIRMING = State()
+
+
+class CancelStates(StatesGroup):
+    CONFIRMING_CANCEL = State()

@@ -6,6 +6,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+import uuid
+
 from app.models import Booking, BookingSource, BookingStatus, Clinic, Patient
 from app.services.normalization import normalize_whitespace
 
@@ -74,3 +76,46 @@ async def create_booking(
     session.add(booking)
     await session.flush()
     return BookingCreateResult(booking=booking, is_duplicate=False)
+
+
+async def get_latest_pending_booking(
+    session: AsyncSession,
+    *,
+    clinic: Clinic,
+    patient: Patient,
+) -> Booking | None:
+    statement = (
+        select(Booking)
+        .where(
+            Booking.clinic_id == clinic.id,
+            Booking.patient_id == patient.id,
+            Booking.status == BookingStatus.pending,
+        )
+        .order_by(Booking.created_at.desc())
+    )
+    result = await session.execute(statement)
+    return result.scalars().first()
+
+
+async def get_booking_by_id(
+    session: AsyncSession,
+    *,
+    clinic: Clinic,
+    booking_id: uuid.UUID,
+) -> Booking | None:
+    statement = select(Booking).where(
+        Booking.id == booking_id,
+        Booking.clinic_id == clinic.id,
+    )
+    result = await session.execute(statement)
+    return result.scalars().first()
+
+
+async def cancel_booking(
+    session: AsyncSession,
+    *,
+    booking: Booking,
+) -> None:
+    booking.status = BookingStatus.cancelled
+    session.add(booking)
+    await session.flush()

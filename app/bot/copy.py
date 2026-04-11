@@ -126,3 +126,34 @@ def future_datetime_required() -> str:
 
 def non_text_retry(prompt: str) -> str:
     return f"Пожалуйста, отправьте ответ текстом.\n\n{prompt}"
+
+
+def cancel_no_pending_booking() -> str:
+    return "У вас нет активных заявок для отмены."
+
+
+def cancel_confirmation(
+    *,
+    clinic: Clinic,
+    service_type: str,
+    preferred_datetime_iso: str | None,
+    preferred_datetime_text: str | None,
+) -> str:
+    if preferred_datetime_iso:
+        dt_str = format_booking_datetime(preferred_datetime_iso, clinic.timezone)
+    else:
+        dt_str = preferred_datetime_text or "не указано"
+    return (
+        "Найдена заявка:\n"
+        f"Услуга: {service_type}\n"
+        f"Дата и время: {dt_str}\n\n"
+        "Вы хотите отменить эту заявку?"
+    )
+
+
+def cancel_success() -> str:
+    return "Заявка отменена. Если захотите записаться снова, напишите /start."
+
+
+def cancel_aborted() -> str:
+    return "Хорошо, заявка сохранена. Если нужна помощь, напишите /start."
